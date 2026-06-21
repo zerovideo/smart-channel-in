@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=yes" />
+        <title>5051710e</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                background: #000;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                font-family: Arial, sans-serif;
+            }
+            .video-container {
+                width: 90%;
+                max-width: 600px;
+            }
+            video {
+                width: 100%;
+                border-radius: 10px;
+                transition: all 0.3s ease;
+            }
+            #ageGateContainer {
+                display: none;
+            }
+            @keyframes softFadeIn {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+            @keyframes softScaleIn {
+                from {
+                    opacity: 0;
+                    transform: scale(0.95);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+            @keyframes softFadeOut {
+                from {
+                    opacity: 1;
+                }
+                to {
+                    opacity: 0;
+                }
+            }
+            .age-gate-overlay {
+                animation: softFadeIn 0.4s ease-out forwards;
+            }
+            .age-gate-modal {
+                animation: softScaleIn 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+            }
+        </style>
+    <script>
+console.log("HEAD TEST");
+</script>
+</head>
+    <body>
+<script>
+console.log("BODY TOP TEST");
+</script>
+        <div class="video-container">
+            <video id="myVideo" loop playsinline controls poster="https://picsum.photos/800/450">
+                <source src="https://example.com/video.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <div id="ageGateContainer"></div>
+        <script>
+            // ========================================
+            // CONFIGURATION
+            // Future: move constants into CONFIG object
+            // ========================================
+            const GITHUB_JSON_URL =
+                "https://raw.githubusercontent.com/taxonomy-ctrl/sambomania/refs/heads/main/links.json";
+            let linkList = [];
+            let ageGateShown = false;
+            let playTimeout = null;
+            const VIDEO_EFFECT = "blur";
+            // ========================================
+            // COOKIE HELPERS
+            // ========================================
+            function setCookie(name, value, hours) {
+                var d = new Date();
+                d.setTime(d.getTime() + hours * 60 * 60 * 1000);
+                document.cookie = name + "=" + value + "; expires=" + d.toUTCString() + "; path=/";
+            }
+            function getCookie(name) {
+                var c = document.cookie.match("(^|;)\\s*" + name + "\\s*=\\s*([^;]+)");
+                return c ? c.pop() : "";
+            }
+            // ========================================
+            // VIDEO EFFECTS
+            // ========================================
+            function applyVideoEffect() {
+                var v = document.getElementById("myVideo");
+                if (VIDEO_EFFECT !== "none")
+                    switch (VIDEO_EFFECT) {
+                        case "blur":
+                            v.style.filter = "blur(12px)";
+                            break;
+                        case "dim":
+                            v.style.opacity = "0.5";
+                            break;
+                        case "grayscale":
+                            v.style.filter = "grayscale(100%)";
+                            break;
+                        case "freeze":
+                            v.pause();
+                            break;
+                        default:
+                            v.style.filter = "blur(12px)";
+                    }
+                v.style.transition = "filter .4s ease, opacity .4s ease";
+            }
+            function resetVideoEffect() {
+                var v = document.getElementById("myVideo");
+                v.style.filter = "";
+                v.style.opacity = "";
+                v.style.transition = "filter .4s ease, opacity .4s ease";
+            }
+            // ========================================
+            // AGE GATE DESIGNS
+            // ========================================
+            var designs = [
+                {
+                    css: ".design1{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;z-index:999999;font-family:Arial,sans-serif}.design1 .modal{width:520px;max-width:95%;background:#fff;border-radius:24px;padding:35px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.2)}.design1 .age-circle{width:145px;height:145px;margin:0 auto 25px;border-radius:50%;background:linear-gradient(135deg,#f13535,#ff6b6b);display:flex;justify-content:center;align-items:center;color:#fff;font-size:72px;font-weight:700;box-shadow:0 10px 20px rgba(241,53,53,0.3)}.design1 h2{color:#eb3b4f;font-size:24px;margin-bottom:20px;font-weight:600}.design1 p{color:#666;font-size:18px;line-height:1.5;margin-bottom:30px}.design1 .modal-buttons{display:flex;gap:12px}.design1 .btn{flex:1;height:56px;border-radius:40px;font-size:16px;cursor:pointer;transition:all .2s ease;font-weight:600}.design1 .btn-confirm{background:#3528f4;color:#fff;border:none}.design1 .btn-confirm:hover{background:#5649ff;transform:translateY(-2px)}.design1 .btn-exit{background:#fff;color:#3528f4;border:2px solid #3528f4}.design1 .btn-exit:hover{background:#f0f0ff;transform:translateY(-2px)}",
+                    html: '<div class="design1 age-gate-overlay" id="ageGate"><div class="modal age-gate-modal"><div class="age-circle">18</div><h2>Verify your age to continue</h2><p>This is sensitive content. Please confirm that you are over 18 years old to continue.</p><div class="modal-buttons"><button class="btn btn-confirm enter-btn">I am over 18</button><button class="btn btn-exit exit-btn">Exit</button></div></div></div>',
+                },
+                {
+                    css: ".design2{position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);display:flex;justify-content:center;align-items:center;z-index:999999;font-family:Arial,sans-serif}.design2 .modal{width:520px;max-width:95%;background:#fff;border-radius:28px;padding:45px 40px;text-align:center;box-shadow:0 25px 50px rgba(0,0,0,0.2)}.design2 .warning{font-size:56px;margin-bottom:20px}.design2 .title{font-size:38px;font-weight:700;color:#eb3950;margin-bottom:20px}.design2 .description{font-size:17px;color:#555;line-height:1.6;margin-bottom:35px}.design2 .btn{width:100%;height:58px;border:none;border-radius:40px;font-size:16px;cursor:pointer;margin-bottom:12px;transition:all .2s ease;font-weight:600}.design2 .btn-under{background:#e0e0e0;color:#666}.design2 .btn-under:hover{background:#ccc;transform:translateY(-2px)}.design2 .btn-confirm{background:#000;color:#fff}.design2 .btn-confirm:hover{background:#222;transform:translateY(-2px)}",
+                    html: '<div class="design2 age-gate-overlay" id="ageGate"><div class="modal age-gate-modal"><div class="warning">⚠️</div><h1 class="title">Adult content</h1><p class="description">Our website deals with sexually explicit content. Please confirm that you are 18 years old or older.</p><button class="btn btn-under exit-btn">I am not 18 years old yet</button><button class="btn btn-confirm enter-btn">I confirm that I am over 18 years old</button></div></div>',
+                },
+                {
+                    css: ".design3{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;justify-content:center;align-items:center;z-index:999999;font-family:Arial,sans-serif}.design3 .age-modal{width:650px;max-width:95%;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,0.15)}.design3 .modal-content{text-align:center;padding:45px 40px}.design3 .modal-content h1{font-size:44px;font-weight:700;color:#333;line-height:1.2;margin-bottom:20px}.design3 .modal-content p{font-size:18px;color:#666}.design3 .modal-footer{display:flex}.design3 .btn{flex:1;height:58px;border:none;font-size:17px;font-weight:600;color:#fff;cursor:pointer;transition:all .2s ease}.design3 .btn-enter{background:#25cc39}.design3 .btn-enter:hover{background:#1fb332}.design3 .btn-exit{background:#f76c81}.design3 .btn-exit:hover{background:#eb5f74}",
+                    html: '<div class="design3 age-gate-overlay" id="ageGate"><div class="age-modal age-gate-modal"><div class="modal-content"><h1>You must be 18<br>or older to enter</h1><p>This content is restricted to visitors above 18 years old.</p></div><div class="modal-footer"><button class="btn btn-enter enter-btn">Enter</button><button class="btn btn-exit exit-btn">Exit</button></div></div></div>',
+                },
+                {
+                    css: ".design4{position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(6px);display:flex;justify-content:center;align-items:center;z-index:999999;font-family:Arial,sans-serif}.design4 .age-modal{width:540px;max-width:95%;background:rgba(31,33,79,0.95);padding:50px 40px 55px;text-align:center;border-radius:28px;box-shadow:0 30px 50px rgba(0,0,0,0.3);backdrop-filter:blur(10px)}.design4 .age-number{font-size:140px;font-weight:800;line-height:1;color:#ff4f9a;margin-bottom:15px;text-shadow:0 5px 15px rgba(255,79,154,0.3)}.design4 .age-title{color:#fff;font-size:34px;font-weight:700;margin-bottom:25px;letter-spacing:1px}.design4 .age-desc{color:#b8b3d9;font-size:17px;line-height:1.7;margin-bottom:35px}.design4 .btn-group{display:flex;gap:12px}.design4 .btn{flex:1;height:52px;border:1px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.05);color:#fff;font-size:16px;cursor:pointer;border-radius:40px;transition:all .2s ease;font-weight:600}.design4 .btn-enter:hover{background:#ff4f9a;border-color:#ff4f9a;transform:translateY(-2px)}.design4 .btn-exit:hover{background:rgba(255,255,255,0.15);transform:translateY(-2px)}",
+                    html: '<div class="design4 age-gate-overlay" id="ageGate"><div class="age-modal age-gate-modal"><div class="age-number">18+</div><h2 class="age-title">ADULTS ONLY</h2><p class="age-desc">Please confirm that you\'re over 18 or please, leave the website.</p><div class="btn-group"><button class="btn btn-enter enter-btn">I\'M OVER 18</button><button class="btn btn-exit exit-btn">EXIT</button></div></div></div>',
+                },
+            ];
+            // ========================================
+            // GITHUB LINKS
+            // ========================================
+            async function fetchLinksFromGitHub() {
+                try {
+                    var r = await fetch(GITHUB_JSON_URL),
+                        d = await r.json();
+                    linkList = d.links;
+                    console.log("✅ Links successfully fetched from GitHub:", linkList.length, "links");
+                    return !0;
+                } catch (e) {
+                    console.log("❌ Failed to fetch from GitHub, using default links");
+                    linkList = [
+                        "https://jabturfembitter.com/bad84yv1?key=602afd55ac67d2a1121fc654e09b30d7",
+                        "https://jabturfembitter.com/ri2aefi1p8?key=a10b110330839bbfbb7fec351a7ec05d",
+                    ];
+                    return !1;
+                }
+            }
+            function getTwoDifferentLinks() {
+                if (linkList.length === 0) return { enterLink: "", exitLink: "" };
+                var t = [...linkList],
+                    e = Math.floor(Math.random() * t.length),
+                    n = t[e];
+                t.splice(e, 1);
+                var a = "";
+                return (a = t.length > 0 ? t[Math.floor(Math.random() * t.length)] : n), { enterLink: n, exitLink: a };
+            }
+            function getRandomDesign() {
+                return designs[Math.floor(Math.random() * designs.length)];
+            }
+            function resetAgeGateState() {
+                (ageGateShown = !1), playTimeout && (clearTimeout(playTimeout), (playTimeout = null));
+            }
+            // ========================================
+            // AGE GATE LOGIC
+            // ========================================
+            async function showAgeGate() {
+                if (ageGateShown) return;
+                var verified = getCookie("age_verified");
+                if (verified === "1") {
+                    console.log("🍪 Cookie found (1h): Age gate will NOT appear");
+                    return;
+                }
+                (ageGateShown = !0), applyVideoEffect(), linkList.length === 0 && (await fetchLinksFromGitHub());
+                var e = getTwoDifferentLinks(),
+                    n = e.enterLink,
+                    a = e.exitLink,
+                    o = getRandomDesign(),
+                    t = document.getElementById("ageGateStyle");
+                t && t.remove();
+                var r = document.createElement("style");
+                (r.id = "ageGateStyle"), (r.textContent = o.css), document.head.appendChild(r);
+                var l = document.getElementById("ageGateContainer");
+                (l.style.display = "block"), (l.innerHTML = o.html);
+                var d = document.getElementById("ageGate");
+                document.querySelectorAll(".enter-btn").forEach(function (e) {
+                    e.onclick = function () {
+                        n && window.open(n, "_blank"),
+                            console.log("🔗 ENTER: Opening link in new tab (ADs/IKLAN)", n),
+                            d &&
+                                ((d.style.animation = "softFadeOut .2s ease forwards"),
+                                setTimeout(function () {
+                                    d.style.display = "none";
+                                }, 200)),
+                            resetVideoEffect(),
+                            setCookie("age_verified", "1", 1),
+                            resetAgeGateState();
+                    };
+                }),
+                    document.querySelectorAll(".exit-btn").forEach(function (e) {
+                        e.onclick = function () {
+                            a && window.open(a, "_blank"),
+                                console.log("🚪 EXIT: Opening link in new tab", a),
+                                d &&
+                                    ((d.style.animation = "softFadeOut .2s ease forwards"),
+                                    setTimeout(function () {
+                                        d.style.display = "none";
+                                    }, 200)),
+                                resetVideoEffect(),
+                                resetAgeGateState();
+                        };
+                    }),
+                    console.log("🔗 LINK ENTER (IKLAN):", n),
+                    console.log("🔗 LINK EXIT (new tab):", a),
+                    console.log("🎬 VIDEO EFFECT:", VIDEO_EFFECT),
+                    console.log("✨ SOFT MODE: Age gate appears with smooth animation"),
+                    console.log("🍪 Cookie will be set for 1 hour on ENTER only");
+            }
+            function onUserPlay() {
+                var verified = getCookie("age_verified");
+                if (verified === "1") {
+                    console.log("🍪 Cookie active (1h): Age gate will NOT appear");
+                    return;
+                }
+                ageGateShown ||
+                    (playTimeout && clearTimeout(playTimeout),
+                    setTimeout(
+                        function () {
+                            showAgeGate();
+                        },
+                        Math.floor(Math.random() * (5000 - 3000 + 1)) + 3000
+                    ));
+            }
+            // ========================================
+            // INITIALIZATION
+            // ========================================
+            var video = document.getElementById("myVideo");
+            video.removeAttribute("autoplay"),
+                resetAgeGateState(),
+                video.addEventListener("play", function () {
+                    console.log("▶️ User is playing video"), onUserPlay();
+                }),
+                fetchLinksFromGitHub(),
+                console.log("✅ Script ready. SOFT AGE GATE MODE"),
+                console.log("🍪 Cookie duration: 1 HOUR (ONLY on ENTER)"),
+                console.log("✅ ENTER: Open ADs link + set cookie + close age gate + reset video"),
+                console.log("✅ EXIT: Open link + close age gate + reset video (NO cookie)"),
+                console.log("✅ Age gate will appear 3-5 seconds AFTER user clicks PLAY");
+        </script>
+    <script>
+console.log("BODY BOTTOM TEST");
+</script>
+</body>
+</html>
